@@ -60,6 +60,9 @@ export function openTeamWorkspaceWindow(workspace: SecondaryWorkspaceTarget, tea
   }
 
   const url = new URL(window.location.href);
+  if (url.pathname === '/chat-first-preview') {
+    url.pathname = '/';
+  }
   url.search = '';
   url.searchParams.set('page', 'F');
   url.searchParams.set('team_workspace_launch', launchId);

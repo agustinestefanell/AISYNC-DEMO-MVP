@@ -1032,9 +1032,17 @@ function TreeWorkspaceCard({
           style={{ borderTop: `1px solid ${borderColor}` }}
         >
           <button
+            type="button"
             data-pan-block="true"
             className="ui-button ui-button-primary min-h-9 px-3 text-[11px] text-white"
+            onPointerDown={(event) => {
+              event.stopPropagation();
+            }}
+            onMouseDown={(event) => {
+              event.stopPropagation();
+            }}
             onClick={(event) => {
+              event.preventDefault();
               event.stopPropagation();
               onPrimaryAction();
             }}
@@ -1043,9 +1051,17 @@ function TreeWorkspaceCard({
           </button>
           {secondaryActionLabel && (
             <button
+              type="button"
               data-pan-block="true"
               className="ui-button min-h-9 px-3 text-[11px] font-medium text-neutral-700"
+              onPointerDown={(event) => {
+                event.stopPropagation();
+              }}
+              onMouseDown={(event) => {
+                event.stopPropagation();
+              }}
               onClick={(event) => {
+                event.preventDefault();
                 event.stopPropagation();
                 onSecondaryAction?.();
               }}
@@ -1562,7 +1578,7 @@ function TreeStructureView({
   onOpenWorkspace,
   onEditTeam,
   onConnectTeam,
-  selectedNodeId,
+  activeTeamRootId,
   externalConnection,
   inlineRename,
   onInlineRenameChange,
@@ -1584,7 +1600,7 @@ function TreeStructureView({
   onOpenWorkspace: (node: TeamsGraphNode) => void;
   onEditTeam: (nodeId: string) => void;
   onConnectTeam: () => void;
-  selectedNodeId: string | null;
+  activeTeamRootId: string | null;
   externalConnection: ConnectTeamDraft | null;
   inlineRename: { nodeId: string; value: string } | null;
   onInlineRenameChange: (value: string) => void;
@@ -1749,9 +1765,20 @@ function TreeStructureView({
                       }}
                     >
                       <button
+                        type="button"
                         className="ui-button ui-button-primary text-white"
-                        onClick={onOpenMainWorkspace}
                         data-pan-block="true"
+                        onPointerDown={(event) => {
+                          event.stopPropagation();
+                        }}
+                        onMouseDown={(event) => {
+                          event.stopPropagation();
+                        }}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onOpenMainWorkspace();
+                        }}
                       >
                         Go to Main Workspace
                       </button>
@@ -1921,7 +1948,7 @@ function TreeStructureView({
                   compact={cardDetails.compact && childCount === 0}
                   outlineOnly={cardDetails.outlineOnly}
                   isSat={node.teamType === 'SAT'}
-                  active={node.id === selectedNodeId}
+                  active={node.id === activeTeamRootId}
                   actionLabel={cardDetails.actionLabel}
                   secondaryActionLabel={cardDetails.secondaryActionLabel}
                   onPrimaryAction={() => onOpenWorkspace(node)}
@@ -1944,7 +1971,7 @@ function TreeOverviewView({
   onOpenWorkspace,
   onEditTeam,
   onConnectTeam,
-  selectedNodeId,
+  activeTeamRootId,
   zoomInSignal,
   zoomOutSignal,
   resetSignal,
@@ -1956,7 +1983,7 @@ function TreeOverviewView({
   onOpenWorkspace: (node: TeamsGraphNode) => void;
   onEditTeam: (nodeId: string) => void;
   onConnectTeam: () => void;
-  selectedNodeId: string | null;
+  activeTeamRootId: string | null;
   zoomInSignal: number;
   zoomOutSignal: number;
   resetSignal: number;
@@ -2070,7 +2097,7 @@ function TreeOverviewView({
                     : `0 8px 18px rgba(15,23,42,0.07), inset 0 3px 0 ${theme.accent}, inset 0 1px 0 rgba(255,255,255,0.75)`,
                 }}
               >
-                {node.id === selectedNodeId ? (
+                {node.id === activeTeamRootId ? (
                   <div
                     className="absolute left-2 top-2 rounded-full bg-emerald-100 px-2 py-1 text-[9px] font-semibold text-emerald-800"
                     style={{ border: '1px solid rgba(16, 185, 129, 0.25)' }}
@@ -2106,13 +2133,21 @@ function TreeOverviewView({
                   </div>
                   <div className="flex items-center gap-1 pt-0.5">
                     <button
+                      type="button"
                       data-pan-block="true"
                       className="rounded-full border px-2 py-[3px] text-[9px] font-medium leading-none text-neutral-700 transition-colors hover:text-neutral-900"
                       style={{
                         borderColor: getFamilyColor(theme.accent, 0.24),
                         background: 'rgba(255,255,255,0.82)',
                       }}
+                      onPointerDown={(event) => {
+                        event.stopPropagation();
+                      }}
+                      onMouseDown={(event) => {
+                        event.stopPropagation();
+                      }}
                       onClick={(event) => {
+                        event.preventDefault();
                         event.stopPropagation();
                         onOpenWorkspace(node);
                       }}
@@ -2120,13 +2155,21 @@ function TreeOverviewView({
                       Open
                     </button>
                     <button
+                      type="button"
                       data-pan-block="true"
                       className="rounded-full border px-2 py-[3px] text-[9px] font-medium leading-none text-neutral-600 transition-colors hover:text-neutral-800"
                       style={{
                         borderColor: getFamilyColor(theme.accent, 0.18),
                         background: getFamilyColor(theme.soft, 0.44),
                       }}
+                      onPointerDown={(event) => {
+                        event.stopPropagation();
+                      }}
+                      onMouseDown={(event) => {
+                        event.stopPropagation();
+                      }}
                       onClick={(event) => {
+                        event.preventDefault();
                         event.stopPropagation();
                         onEditTeam(node.id);
                       }}
@@ -2153,6 +2196,7 @@ export function PageD() {
   const [showConnectTeamModal, setShowConnectTeamModal] = useState(false);
   const [connectTeamDraft, setConnectTeamDraft] = useState<ConnectTeamDraft>(createInitialConnectTeamDraft);
   const [externalConnection, setExternalConnection] = useState<ConnectTeamDraft | null>(null);
+  const [activeWorkspaceRootId, setActiveWorkspaceRootId] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [draftLabel, setDraftLabel] = useState('');
@@ -2293,6 +2337,11 @@ export function PageD() {
   );
   const selectedTeamLead = selectedFamilyLead ?? selectedNode;
   const selectedTeamType = selectedFamilyLead?.teamType ?? selectedNode?.teamType ?? 'MAT';
+  const activeTeamRootId = activeWorkspaceRootId;
+  const activeTeamLabel =
+    activeWorkspaceRootId
+      ? teamsState.teamsGraph.find((node) => node.id === activeWorkspaceRootId)?.label ?? null
+      : null;
   const teamAgents = selectedTeamMembers.filter((node) => node.id !== selectedTeamLead?.id);
   const manageableAgents = selectedTeamMembers;
   const selectedAgent =
@@ -2728,6 +2777,11 @@ export function PageD() {
   };
 
   const openMainWorkspace = (focusAgent: TeamsGraphNode | null = null) => {
+    if (focusAgent) {
+      setActiveWorkspaceRootId(focusAgent.id);
+    }
+    setSelectedNodeId(null);
+    dispatch({ type: 'SET_SECONDARY_WORKSPACE', workspace: null });
     dispatch({
       type: 'SET_WORKSPACE_FOCUS',
       agent:
@@ -2752,8 +2806,6 @@ export function PageD() {
       return;
     }
 
-    setSelectedNodeId(node.id);
-
     // Determine if this is a main team (general_manager/root) or secondary team
     const isMainTeam = node.type === 'general_manager' || !node.parentId;
 
@@ -2763,13 +2815,19 @@ export function PageD() {
       setToast(`Opened workspace for ${node.label}.`);
     } else {
       // Open secondary/team workspace
+      saveTeamsMapState(teamsState);
       const secondaryTarget = getSecondaryWorkspaceTarget(node, teamsState.teamsGraph);
-      dispatch({
-        type: 'SET_WORKSPACE_FOCUS',
-        agent: getWorkspaceAgentForTeam(secondaryTarget.teamId, teamsState.teamsGraph),
-      });
+      setActiveWorkspaceRootId(secondaryTarget.rootNodeId);
+      setSelectedNodeId(null);
+
+      if (openTeamWorkspaceWindow(secondaryTarget, teamsState)) {
+        setToast(`${secondaryTarget.label} workspace opened in a new window.`);
+        return;
+      }
+
       dispatch({ type: 'SET_SECONDARY_WORKSPACE', workspace: secondaryTarget });
-      setToast(`Opened workspace for ${node.label}.`);
+      dispatch({ type: 'SET_PAGE', page: 'F' });
+      setToast('Popup blocked. Workspace opened in this window.');
     }
   };
 
@@ -2836,7 +2894,7 @@ export function PageD() {
                 Teams {topLevelUnits.length} / Workers {totalWorkers}
               </div>
 
-              {selectedTeamLead ? (
+              {activeTeamLabel ? (
                 <div
                   className="ui-surface flex items-center gap-2 rounded-full border px-3 py-2 text-xs text-neutral-700"
                   style={{
@@ -2848,7 +2906,7 @@ export function PageD() {
                   <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-800">
                     Active
                   </span>
-                  <span>Active team: {selectedTeamLead.label}</span>
+                  <span>Active team: {activeTeamLabel}</span>
                 </div>
               ) : null}
 
@@ -2904,7 +2962,7 @@ export function PageD() {
                 onOpenWorkspace={openTeamWorkspace}
                 onEditTeam={openEditNode}
                 onConnectTeam={openConnectTeamModal}
-                selectedNodeId={selectedNodeId}
+                activeTeamRootId={activeTeamRootId}
                 externalConnection={externalConnection}
                 inlineRename={inlineRename}
                 onInlineRenameChange={(value) =>
@@ -2927,7 +2985,7 @@ export function PageD() {
                 onOpenWorkspace={openTeamWorkspace}
                 onEditTeam={openEditNode}
                 onConnectTeam={openConnectTeamModal}
-                selectedNodeId={selectedNodeId}
+                activeTeamRootId={activeTeamRootId}
                 zoomInSignal={zoomInSignal}
                 zoomOutSignal={zoomOutSignal}
                 resetSignal={resetSignal}
