@@ -547,6 +547,15 @@ export interface TeamsGraphNode {
   documentationHistory?: {
     historicalWorkerLabel?: string | null;
   };
+  // MVP prepared fields
+  projectId?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  parentTeamId?: string | null;
+  createdFromAgentId?: string | null;
+  hierarchyLevel?: number;
+  isElasticNode?: boolean;
 }
 
 export interface TeamFolderItem {

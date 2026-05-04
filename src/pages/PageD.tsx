@@ -2371,7 +2371,7 @@ export function PageD() {
       ...current,
       teamsGraph: current.teamsGraph.map((node) => {
         if (node.id === selectedNode.id) {
-          return { ...node, label: nextLeadLabel, provider: draftProvider };
+          return { ...node, label: nextLeadLabel, provider: draftProvider, updatedAt: new Date().toISOString() };
         }
 
         if (node.id === selectedAgentId && selectedAgent) {
@@ -2438,6 +2438,14 @@ export function PageD() {
         parentId: 'gm_1',
         teamId,
         teamType: addTeamType,
+        projectId: 'proj1', // MVP single project
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        parentTeamId: null,
+        createdFromAgentId: null,
+        hierarchyLevel: 0,
+        isElasticNode: false,
       },
       ...workerNodes,
     ];
@@ -3339,11 +3347,12 @@ export function PageD() {
                   Add Agent
                 </button>
                 <button
-                  className="ui-button text-neutral-700 shadow-sm"
-                  onClick={handlePromoteAgent}
-                  disabled={teamAgents.length === 0}
+                  className="ui-button text-neutral-400 shadow-sm cursor-not-allowed"
+                  onClick={() => setToast('Coming later: promote this worker into a Senior Manager with its own subteam.')}
+                  disabled={true}
+                  title="Organizational Elasticity - coming in future version"
                 >
-                  Promote Agent
+                  Promote Agent (Future)
                 </button>
                 <button
                   className="ui-button text-neutral-700 shadow-sm"
