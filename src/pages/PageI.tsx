@@ -102,7 +102,7 @@ export function PageI() {
                   Contact Us
                 </h1>
                 <p className="mt-4 max-w-lg text-sm leading-6 text-neutral-600 sm:text-base">
-                  Send us your message and we will review it.
+                  Send feedback, questions, or demo requests for AISYNC-DEMO-MVP.
                 </p>
               </div>
 
@@ -112,7 +112,7 @@ export function PageI() {
                     What happens next
                   </div>
                   <p className="mt-2">
-                    AISync stores the contact request as a structured row for review. No public inbox,
+                    AISYNC-DEMO-MVP stores this contact request as a structured row for review. No public inbox,
                     no email automation, and no extra product module are created from this form.
                   </p>
                 </div>

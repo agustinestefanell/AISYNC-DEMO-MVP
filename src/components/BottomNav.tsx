@@ -17,6 +17,7 @@ const PAGE_ITEMS: NavItem[] = [
   { key: 'C', label: 'Audit Log', shortLabel: 'Log', page: 'C' },
   { key: 'A', label: 'Main Workspace', shortLabel: 'Main', page: 'A' },
   { key: 'B', label: 'Documentation Mode', shortLabel: 'Docs', page: 'B' },
+  { key: 'I', label: 'Contact Us', shortLabel: 'Contact', page: 'I' },
 ];
 
 const SETTINGS_ITEMS = ['Project Settings', 'Agent Labels', 'Theme Preset'];
@@ -275,6 +276,16 @@ export function BottomNav() {
             active={state.currentPage === 'B'}
             href={buildPageHref('B')}
             onNavigate={() => navigateToPage('B')}
+            subdued={isPreviewEntryPoint}
+          />
+
+          <span className={separatorClassName}>|</span>
+
+          <NavButton
+            label="Contact Us"
+            active={state.currentPage === 'I'}
+            href={buildPageHref('I')}
+            onNavigate={() => navigateToPage('I')}
             subdued={isPreviewEntryPoint}
           />
         </div>
