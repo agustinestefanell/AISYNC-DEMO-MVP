@@ -872,6 +872,7 @@ function TreeWorkspaceCard({
   compact,
   outlineOnly,
   isSat,
+  active,
   actionLabel,
   secondaryActionLabel,
   onPrimaryAction,
@@ -895,6 +896,7 @@ function TreeWorkspaceCard({
   secondaryActionLabel?: string;
   onPrimaryAction: () => void;
   onSecondaryAction?: () => void;
+  active?: boolean;
 }) {
   const shellBackground = outlineOnly ? '#ffffff' : ribbonColor;
   const shellColor = outlineOnly ? accentColor : '#ffffff';
@@ -933,7 +935,7 @@ function TreeWorkspaceCard({
         </div>
       ) : null}
       <div
-        className="shrink-0 px-4 py-3"
+        className="relative shrink-0 px-4 py-3"
         style={{
           background: outlineOnly
             ? 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,248,251,0.96) 100%)'
@@ -942,6 +944,17 @@ function TreeWorkspaceCard({
           borderBottom: `1px solid ${outlineOnly ? borderColor : 'rgba(255,255,255,0.16)'}`,
         }}
       >
+        {active ? (
+          <span
+            className="absolute right-3 top-3 rounded-full px-2 py-1 text-[9px] font-semibold text-emerald-900"
+            style={{
+              background: 'rgba(236, 253, 245, 0.95)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+            }}
+          >
+            Active
+          </span>
+        ) : null}
         <div className="text-[10px] uppercase tracking-[0.18em] opacity-70">{subtitle}</div>
         <div className={`mt-1 min-h-[2.8rem] font-semibold ${compact ? 'text-[12px]' : 'text-[14px]'}`}>
           {titleContent ?? title}
@@ -1549,6 +1562,7 @@ function TreeStructureView({
   onOpenWorkspace,
   onEditTeam,
   onConnectTeam,
+  selectedNodeId,
   externalConnection,
   inlineRename,
   onInlineRenameChange,
@@ -1570,6 +1584,7 @@ function TreeStructureView({
   onOpenWorkspace: (node: TeamsGraphNode) => void;
   onEditTeam: (nodeId: string) => void;
   onConnectTeam: () => void;
+  selectedNodeId: string | null;
   externalConnection: ConnectTeamDraft | null;
   inlineRename: { nodeId: string; value: string } | null;
   onInlineRenameChange: (value: string) => void;
@@ -1906,6 +1921,7 @@ function TreeStructureView({
                   compact={cardDetails.compact && childCount === 0}
                   outlineOnly={cardDetails.outlineOnly}
                   isSat={node.teamType === 'SAT'}
+                  active={node.id === selectedNodeId}
                   actionLabel={cardDetails.actionLabel}
                   secondaryActionLabel={cardDetails.secondaryActionLabel}
                   onPrimaryAction={() => onOpenWorkspace(node)}
@@ -1928,6 +1944,7 @@ function TreeOverviewView({
   onOpenWorkspace,
   onEditTeam,
   onConnectTeam,
+  selectedNodeId,
   zoomInSignal,
   zoomOutSignal,
   resetSignal,
@@ -1939,6 +1956,7 @@ function TreeOverviewView({
   onOpenWorkspace: (node: TeamsGraphNode) => void;
   onEditTeam: (nodeId: string) => void;
   onConnectTeam: () => void;
+  selectedNodeId: string | null;
   zoomInSignal: number;
   zoomOutSignal: number;
   resetSignal: number;
@@ -2052,6 +2070,14 @@ function TreeOverviewView({
                     : `0 8px 18px rgba(15,23,42,0.07), inset 0 3px 0 ${theme.accent}, inset 0 1px 0 rgba(255,255,255,0.75)`,
                 }}
               >
+                {node.id === selectedNodeId ? (
+                  <div
+                    className="absolute left-2 top-2 rounded-full bg-emerald-100 px-2 py-1 text-[9px] font-semibold text-emerald-800"
+                    style={{ border: '1px solid rgba(16, 185, 129, 0.25)' }}
+                  >
+                    Active
+                  </div>
+                ) : null}
                 {isSatNode ? (
                   <div
                     className="absolute right-1.5 top-1.5 rounded-[7px] border px-1.5 py-0.5 text-[8px] font-semibold leading-none text-neutral-700"
@@ -2726,20 +2752,25 @@ export function PageD() {
       return;
     }
 
-    saveTeamsMapState(teamsState);
-    const workspace = getSecondaryWorkspaceTarget(node, teamsState.teamsGraph);
+    setSelectedNodeId(node.id);
 
-    if (openTeamWorkspaceWindow(workspace, teamsState)) {
-      setToast(`${workspace.label} workspace opened in a new window.`);
-      return;
+    // Determine if this is a main team (general_manager/root) or secondary team
+    const isMainTeam = node.type === 'general_manager' || !node.parentId;
+
+    if (isMainTeam) {
+      // Open main workspace
+      openMainWorkspace(node);
+      setToast(`Opened workspace for ${node.label}.`);
+    } else {
+      // Open secondary/team workspace
+      const secondaryTarget = getSecondaryWorkspaceTarget(node, teamsState.teamsGraph);
+      dispatch({
+        type: 'SET_WORKSPACE_FOCUS',
+        agent: getWorkspaceAgentForTeam(secondaryTarget.teamId, teamsState.teamsGraph),
+      });
+      dispatch({ type: 'SET_SECONDARY_WORKSPACE', workspace: secondaryTarget });
+      setToast(`Opened workspace for ${node.label}.`);
     }
-
-    dispatch({
-      type: 'SET_SECONDARY_WORKSPACE',
-      workspace,
-    });
-    dispatch({ type: 'SET_PAGE', page: 'F' });
-    setToast('Popup blocked. Workspace opened in this window.');
   };
 
   const teamsContent = (
@@ -2805,6 +2836,22 @@ export function PageD() {
                 Teams {topLevelUnits.length} / Workers {totalWorkers}
               </div>
 
+              {selectedTeamLead ? (
+                <div
+                  className="ui-surface flex items-center gap-2 rounded-full border px-3 py-2 text-xs text-neutral-700"
+                  style={{
+                    borderColor: 'rgba(15, 23, 42, 0.12)',
+                    background: 'rgba(255,255,255,0.86)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.72)',
+                  }}
+                >
+                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-800">
+                    Active
+                  </span>
+                  <span>Active team: {selectedTeamLead.label}</span>
+                </div>
+              ) : null}
+
               <div
                 className="flex items-center gap-2 rounded-full border p-1"
                 style={{
@@ -2857,6 +2904,7 @@ export function PageD() {
                 onOpenWorkspace={openTeamWorkspace}
                 onEditTeam={openEditNode}
                 onConnectTeam={openConnectTeamModal}
+                selectedNodeId={selectedNodeId}
                 externalConnection={externalConnection}
                 inlineRename={inlineRename}
                 onInlineRenameChange={(value) =>
@@ -2879,6 +2927,7 @@ export function PageD() {
                 onOpenWorkspace={openTeamWorkspace}
                 onEditTeam={openEditNode}
                 onConnectTeam={openConnectTeamModal}
+                selectedNodeId={selectedNodeId}
                 zoomInSignal={zoomInSignal}
                 zoomOutSignal={zoomOutSignal}
                 resetSignal={resetSignal}
@@ -3409,205 +3458,28 @@ export function PageD() {
         <Modal
           title="Connect Team"
           onClose={() => setShowConnectTeamModal(false)}
-          width="max-w-6xl"
+          width="max-w-3xl"
         >
-          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.95fr)]">
-            <div className="flex self-start flex-col gap-3">
-              <div className="text-[14px] leading-[1.45] text-neutral-600">
-                Create a controlled connection between your team and an external account.
+          <div className="grid gap-4">
+            <div className="grid gap-3">
+              <div className="text-[14px] leading-[1.5] text-neutral-900 font-semibold">
+                Connect Team is coming soon.
               </div>
-
-              <div className="grid gap-4 rounded-[18px] border border-neutral-200 bg-white px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-                <label className="grid gap-1">
-                  <span className="ui-label">User email</span>
-                  <input
-                    className="ui-input text-xs"
-                    placeholder="name@company.com"
-                    value={connectTeamDraft.userEmail}
-                    onChange={(event) =>
-                      setConnectTeamDraft((current) => ({ ...current, userEmail: event.target.value }))
-                    }
-                  />
-                </label>
-
-                <div className="grid gap-2">
-                  <span className="ui-label">Connection type</span>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {([
-                      {
-                        value: 'project-bound' as const,
-                        title: 'Project-bound connection',
-                        body: 'Connection limited to one project.',
-                      },
-                      {
-                        value: 'persistent-partner' as const,
-                        title: 'Persistent partner connection',
-                        body: 'Stable connection for recurring collaboration between accounts.',
-                      },
-                    ]).map((option) => {
-                      const active = connectTeamDraft.connectionType === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={`rounded-[16px] border px-4 py-4 text-left transition-colors ${
-                            active ? 'border-neutral-300 bg-white' : 'border-neutral-200 bg-neutral-50'
-                          }`}
-                          onClick={() =>
-                            setConnectTeamDraft((current) => ({ ...current, connectionType: option.value }))
-                          }
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-semibold text-neutral-900">{option.title}</div>
-                              <div className="mt-1 text-xs leading-[1.5] text-neutral-600">{option.body}</div>
-                            </div>
-                            <span
-                              className="mt-0.5 flex h-4 w-4 items-center justify-center rounded-full border"
-                              style={{
-                                borderColor: active ? 'rgba(15, 23, 42, 0.88)' : 'rgba(15, 23, 42, 0.32)',
-                                background: 'rgba(255,255,255,0.96)',
-                              }}
-                            >
-                              {active ? <span className="h-2 w-2 rounded-full bg-neutral-950" /> : null}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <span className="ui-label">Host Team</span>
-                  <div className="text-xs leading-[1.5] text-neutral-600">
-                    Select which local team will host this external connection.
-                  </div>
-                  <select
-                    className="ui-input text-xs"
-                    value={connectTeamDraft.hostTeamId}
-                    onChange={(event) =>
-                      setConnectTeamDraft((current) => ({ ...current, hostTeamId: event.target.value }))
-                    }
-                  >
-                    {topLevelUnits.map((team) => (
-                      <option key={team.teamId} value={team.teamId}>
-                        {team.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid gap-2">
-                  <span className="ui-label">Shared scope</span>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {([
-                      {
-                        value: 'no-shared-repository' as const,
-                        title: 'No shared repository',
-                        body: 'Keep both sides separated and exchange only approved packages.',
-                      },
-                      {
-                        value: 'shared-project-repository' as const,
-                        title: 'Shared project repository',
-                        body: 'Shared project base for approved artifacts, not a live common repository.',
-                      },
-                    ]).map((option) => {
-                      const active = connectTeamDraft.sharedScope === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={`rounded-[16px] border px-4 py-4 text-left transition-colors ${
-                            active ? 'border-neutral-300 bg-white' : 'border-neutral-200 bg-neutral-50'
-                          }`}
-                          onClick={() =>
-                            setConnectTeamDraft((current) => ({ ...current, sharedScope: option.value }))
-                          }
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-semibold text-neutral-900">{option.title}</div>
-                              <div className="mt-1 text-xs leading-[1.5] text-neutral-600">{option.body}</div>
-                            </div>
-                            <span
-                              className="mt-0.5 flex h-4 w-4 items-center justify-center rounded-full border"
-                              style={{
-                                borderColor: active ? 'rgba(15, 23, 42, 0.88)' : 'rgba(15, 23, 42, 0.32)',
-                                background: 'rgba(255,255,255,0.96)',
-                              }}
-                            >
-                              {active ? <span className="h-2 w-2 rounded-full bg-neutral-950" /> : null}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <span className="ui-label">Shared Objects of the Selected Team</span>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {TEAM_CONNECTION_OBJECTS.map((item) => {
-                      const checked = connectTeamDraft.sharedObjects.includes(item.id);
-                      return (
-                        <label
-                          key={item.id}
-                          className="flex items-center gap-3 rounded-[14px] border border-neutral-200 bg-white px-3 py-3 text-sm text-neutral-700"
-                        >
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 accent-slate-900"
-                            checked={checked}
-                            onChange={() => handleToggleSharedObject(item.id)}
-                          />
-                          <span>{item.label}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <span className="ui-label">External Team View in Teams Map</span>
-                  <div className="rounded-[14px] border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm leading-[1.55] text-neutral-600">
-                    External teams are shown with a default external view in the map.
-                  </div>
-                </div>
+              <div className="text-sm leading-[1.75] text-neutral-600">
+                Connect Team is reserved for a future release. This MVP currently supports internal teams inside one AISync cell.
               </div>
-
-              <div className="flex flex-wrap items-center gap-2 pt-0.5 pb-0.5">
-                <button className="ui-button ui-button-primary min-h-9 px-4 text-sm text-white" onClick={handleSendConnectionRequest}>
-                  Send request
-                </button>
-                <button className="ui-button min-h-9 px-4 text-sm text-neutral-700" onClick={() => setShowConnectTeamModal(false)}>
-                  Cancel
-                </button>
+              <div className="rounded-[18px] border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm leading-[1.75] text-neutral-700">
+                No external team connection flow is active in this demo. The feature is preserved in the UI only as a future placeholder.
               </div>
             </div>
 
-            <div className="min-h-0 self-stretch">
-              <div className="flex h-full min-h-[740px] flex-col rounded-[18px] border border-neutral-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97)_0%,rgba(245,248,251,0.98)_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-                <div className="text-sm font-semibold text-neutral-950">Glossary</div>
-                <div className="mt-1 text-xs leading-[1.5] text-neutral-600">
-                  Read each control in plain language before you configure the relationship.
-                </div>
-                <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-2">
-                  <div className="grid gap-4">
-                    {TEAM_CONNECTION_GLOSSARY.map((entry) => (
-                      <div key={entry.term} className="text-sm leading-[1.55] text-neutral-700">
-                        <div className="font-semibold underline decoration-neutral-500/60 underline-offset-2">
-                          {entry.term}
-                        </div>
-                        <div className="mt-1 text-[13px] leading-[1.6] text-neutral-600">
-                          {entry.body}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                className="ui-button min-h-9 px-4 text-sm text-neutral-700"
+                onClick={() => setShowConnectTeamModal(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </Modal>
