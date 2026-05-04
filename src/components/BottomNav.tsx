@@ -16,23 +16,7 @@ const PAGE_ITEMS: NavItem[] = [
   { key: 'D', label: 'Teams Map', shortLabel: 'Teams', page: 'D' },
   { key: 'C', label: 'Audit Log', shortLabel: 'Log', page: 'C' },
   { key: 'A', label: 'Main Workspace', shortLabel: 'Main', page: 'A' },
-  {
-    key: 'cross_verification',
-    label: 'Cross Verification',
-    shortLabel: 'Cross',
-    page: 'G',
-    workspace: {
-      teamId: CROSS_VERIFICATION_TEAM_ID,
-      label: 'Cross Verification',
-      color: getTeamTheme(CROSS_VERIFICATION_TEAM_ID).ribbon,
-      nodeId: `${CROSS_VERIFICATION_TEAM_ID}_sm`,
-      nodeType: 'senior_manager',
-      rootNodeId: `${CROSS_VERIFICATION_TEAM_ID}_sm`,
-      focusNodeId: `${CROSS_VERIFICATION_TEAM_ID}_sm`,
-    },
-  },
   { key: 'B', label: 'Documentation Mode', shortLabel: 'Docs', page: 'B' },
-  { key: 'E', label: 'Prompts Library', shortLabel: 'Prompts', page: 'E' },
 ];
 
 const SETTINGS_ITEMS = ['Project Settings', 'Agent Labels', 'Theme Preset'];
@@ -287,113 +271,10 @@ export function BottomNav() {
           <span className={separatorClassName}>|</span>
 
           <NavButton
-            label="Cross Verification"
-            active={isCrossVerificationActive}
-            href={buildPageHref('G')}
-            onNavigate={navigateToCrossVerification}
-            subdued={isPreviewEntryPoint}
-          />
-
-          <span className={separatorClassName}>|</span>
-
-          <NavButton
             label="Documentation Mode"
             active={state.currentPage === 'B'}
             href={buildPageHref('B')}
             onNavigate={() => navigateToPage('B')}
-            subdued={isPreviewEntryPoint}
-          />
-
-          <span className={separatorClassName}>|</span>
-
-          <NavButton
-            label="Prompts Library"
-            active={state.currentPage === 'E'}
-            href={buildPageHref('E')}
-            onNavigate={() => navigateToPage('E')}
-            subdued={isPreviewEntryPoint}
-          />
-
-          {secondaryWorkspaceNavItem && (
-            <>
-              <span className={separatorClassName}>|</span>
-              <NavButton
-                label="Secondary Workspace"
-                active={state.currentPage === 'F' && !isCrossVerificationActive}
-                href={buildPageHref('F')}
-                onNavigate={() => navigateToPage('F')}
-                subdued={isPreviewEntryPoint}
-              />
-            </>
-          )}
-
-          <span className={separatorClassName}>|</span>
-
-          <div className="relative">
-            <button
-              className={`ui-nav-button transition-colors ${
-                isPreviewEntryPoint ? 'text-slate-500 hover:text-slate-800' : 'text-white/78 hover:text-white'
-              }`}
-              onClick={() => {
-                setShowSettings((value) => !value);
-                setShowAdvanced(false);
-                setShowMobileMenu(false);
-              }}
-            >
-              Settings
-            </button>
-            {showSettings && (
-              <div className="ui-popover absolute bottom-12 left-1/2 min-w-44 -translate-x-1/2 py-1">
-                {SETTINGS_ITEMS.map((item) => (
-                  <button
-                    key={item}
-                    className="block w-full px-4 py-2 text-left text-xs text-white/86 transition-colors hover:bg-white/8"
-                    onClick={closeMenus}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <span className={separatorClassName}>|</span>
-
-          <div className="relative">
-            <button
-              className={`ui-nav-button transition-colors ${
-                isPreviewEntryPoint ? 'text-slate-500 hover:text-slate-800' : 'text-white/78 hover:text-white'
-              }`}
-              onClick={() => {
-                setShowAdvanced((value) => !value);
-                setShowSettings(false);
-                setShowMobileMenu(false);
-              }}
-            >
-              Advanced
-            </button>
-            {showAdvanced && (
-              <div className="ui-popover absolute bottom-12 right-0 min-w-48 py-1">
-                {ADVANCED_ITEMS.map((item) => (
-                  <button
-                    key={item.label}
-                    className="block w-full px-4 py-2 text-left text-xs text-white/65 transition-colors hover:bg-white/8"
-                    onClick={() => (item.page ? navigateToPage(item.page) : closeMenus())}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <span className={separatorClassName}>|</span>
-
-          <NavButton
-            label="Contact Us"
-            active={state.currentPage === 'I'}
-            href={buildPageHref('I')}
-            onNavigate={() => navigateToPage('I')}
             subdued={isPreviewEntryPoint}
           />
         </div>

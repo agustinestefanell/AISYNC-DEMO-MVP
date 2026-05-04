@@ -80,16 +80,6 @@ export function TopBar() {
                 {state.projectName}
               </span>
             </div>
-            <button
-              className="min-w-0 rounded-[8px] text-right outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-              onClick={() => dispatch({ type: 'SET_PAGE', page: 'J' })}
-              title="Open chat-first preview"
-            >
-              <span className="mr-1 text-white/58">User:</span>
-              <span className="inline-block max-w-[124px] truncate align-bottom font-medium text-white sm:max-w-[170px]">
-                {state.userName}
-              </span>
-            </button>
           </div>
         </div>
       </header>
