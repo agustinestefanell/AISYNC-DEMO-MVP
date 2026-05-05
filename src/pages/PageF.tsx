@@ -750,6 +750,9 @@ export function PageF() {
         <div className="app-frame mx-auto flex h-full min-h-0 w-full max-w-[1600px] items-center justify-center overflow-hidden px-6 py-6">
           <div className="max-w-lg text-center">
             <h1 className="ui-title">Secondary Workspace</h1>
+            <div className="mt-3 rounded-full border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-800">
+              Current Team: none selected
+            </div>
             <p className="mt-3 text-sm text-neutral-600">
               Open a team workspace from Teams Map to load the corresponding sub-team workspace.
             </p>
@@ -775,10 +778,44 @@ export function PageF() {
 
   const activeWorker =
     workspaceMembers.find((worker) => worker.id === activePanelId) ?? workspaceMembers[0] ?? null;
+  const workspaceRoleSummary = [
+    shouldShowTeamManager
+      ? `Manager / Senior Manager: ${teamLabel}`
+      : `Manager / Senior Manager: ${rootNode.label}`,
+    ...workspaceMembers.map((worker, index) => `Worker ${index + 1}: ${worker.label}`),
+  ];
 
   return (
     <div className="app-page-shell h-full min-h-0 min-w-0 overflow-hidden px-2 py-2 sm:px-3 sm:py-3">
       <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-2">
+        <div
+          className="ui-surface-subtle app-short-landscape-hide flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+          style={{ borderColor: theme.border, backgroundColor: theme.soft }}
+        >
+          <div className="min-w-0">
+            <div
+              className="text-[10px] font-semibold uppercase tracking-[0.16em]"
+              style={{ color: theme.accent }}
+            >
+              Team Workspace
+            </div>
+            <div className="mt-0.5 text-sm font-semibold text-neutral-900">
+              Current Team: {teamLabel || 'none selected'}
+            </div>
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] text-neutral-700">
+            {workspaceRoleSummary.map((label) => (
+              <span
+                key={label}
+                className="rounded-full border bg-white/85 px-2.5 py-1 font-medium"
+                style={{ borderColor: theme.border }}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+
         {isCrossVerificationTeam && (
           <div
             className="ui-surface-subtle px-4 py-3"

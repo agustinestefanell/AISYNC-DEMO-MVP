@@ -27,6 +27,11 @@ export function PageA() {
     { agent: 'worker1', label: 'Worker 1', mobileLabel: 'W1' },
     { agent: 'worker2', label: 'Worker 2', mobileLabel: 'W2' },
   ];
+  const mainWorkspaceRoleSummary = [
+    'Manager / General Manager',
+    'Worker 1',
+    'Worker 2',
+  ];
 
   const renderPanel = (agent: AgentRole) => (
     <AgentPanel
@@ -41,6 +46,24 @@ export function PageA() {
   return (
     <div className="app-page-shell h-full min-h-0 min-w-0 overflow-hidden px-2 py-2 sm:px-3 sm:py-3">
       <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-2">
+        <div className="ui-surface-subtle app-short-landscape-hide flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+          <div className="min-w-0">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
+              Workspace Context
+            </div>
+            <div className="mt-0.5 text-sm font-semibold text-neutral-900">
+              Current Team: General / Main Team
+            </div>
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] text-neutral-600">
+            {mainWorkspaceRoleSummary.map((label) => (
+              <span key={label} className="rounded-full border border-neutral-200 bg-white px-2.5 py-1 font-medium">
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+
         <div className="ui-surface ui-workspace-tabs app-short-landscape-grid grid grid-cols-3 gap-1 p-1 sm:hidden">
           {workspaceTabs.map((tab) => (
             <button
