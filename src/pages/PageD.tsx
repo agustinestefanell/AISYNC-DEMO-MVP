@@ -236,7 +236,7 @@ function MapAddUserTeamAnchor({
           </div>
           <div className="mt-4 text-[14px] font-semibold text-neutral-900">Connect Team</div>
           <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-neutral-500">
-            Link external User
+            Coming Soon
           </div>
         </button>
       )}
@@ -285,7 +285,7 @@ function TreeAddUserTeamAnchor({ onClick }: { onClick: () => void }) {
           Connect Team
         </div>
         <div className="mt-1 text-[7px] uppercase tracking-[0.16em] text-neutral-500">
-          Link external User
+          Coming Soon
         </div>
       </button>
     </div>
@@ -447,27 +447,22 @@ function getMapCardDetails({
 }) {
   const narrative = getMapTeamNarrative(node.teamId);
   const providerLabel = getProviderDisplayName(node.provider);
-  const teamTag = teamSettings?.savingTag ?? 'TEAM';
+  const statusLabel = node.phaseState ?? 'Ready';
+  const typeLabel = node.teamType ?? 'MAT';
 
   if (node.type === 'senior_manager') {
     const isPromotedFamily = !isTopLevelUnit;
 
     return {
-      subtitle: isTopLevelUnit ? 'Sub-Team Workspace' : 'Elastic Sub-Manager',
-      functionLabel: isPromotedFamily ? 'Elastic branch coordination' : narrative.functionLabel,
+      subtitle: isTopLevelUnit ? 'Team' : 'Future Branch',
+      functionLabel: isPromotedFamily ? 'Prepared expansion path' : narrative.functionLabel,
       brief: isPromotedFamily
-        ? `Promoted from ${parentNode?.label ?? 'its parent lane'}, now coordinating an autonomous sub-family with its own two-worker operating queue.`
-        : narrative.teamBrief,
+        ? `Coming later: this branch can become its own team workspace when Organizational Elasticity is enabled.`
+        : `Internal ${typeLabel} team. Open its workspace or edit the team setup.`,
       tags: isPromotedFamily
-        ? [providerLabel, `Parent ${parentNode?.label ?? 'Lead'}`, 'Promoted lane']
-        : [providerLabel, ...narrative.teamTags, `Tag ${teamTag}`],
-      metrics: isPromotedFamily
-        ? []
-        : [
-            { label: 'Threads', value: String(counts.conversations) },
-            { label: 'Docs', value: String(counts.documents) },
-            { label: 'Reports', value: String(counts.reports) },
-          ],
+        ? [providerLabel, 'Coming later', `Parent ${parentNode?.label ?? 'Lead'}`]
+        : [typeLabel, statusLabel, providerLabel],
+      metrics: [],
       actionLabel: 'Open',
       secondaryActionLabel: 'Edit' as const,
       compact: false,
@@ -477,15 +472,11 @@ function getMapCardDetails({
 
   if (isDirectUnit) {
     return {
-      subtitle: 'Direct Team Workspace',
+      subtitle: 'Core Branch',
       functionLabel: narrative.functionLabel,
-      brief: narrative.teamBrief,
-      tags: [providerLabel, ...narrative.teamTags, `Tag ${teamTag}`],
-      metrics: [
-        { label: 'Threads', value: String(counts.conversations) },
-        { label: 'Docs', value: String(counts.documents) },
-        { label: 'Reports', value: String(counts.reports) },
-      ],
+      brief: `Visible branch inside the General Team. Open its workspace or edit the branch setup.`,
+      tags: ['Core', statusLabel, providerLabel],
+      metrics: [],
       actionLabel: 'Open',
       secondaryActionLabel: 'Edit' as const,
       compact: false,
@@ -495,16 +486,12 @@ function getMapCardDetails({
 
   const isWorkerInPromotedFamily = parentNode?.type === 'senior_manager' && parentNode.parentId !== 'gm_1';
   return {
-    subtitle: isWorkerInPromotedFamily ? 'Branch Worker' : 'Team Worker',
+    subtitle: isWorkerInPromotedFamily ? 'Future Worker' : 'Worker',
     functionLabel: narrative.workerFunction,
     brief: isWorkerInPromotedFamily
-      ? `Executes the autonomous branch under ${parentNode?.label}, keeping that promoted family separate from the parent worker block.`
-      : narrative.workerBrief,
-    tags: [
-      providerLabel,
-      isWorkerInPromotedFamily ? `Family ${parentNode?.label}` : `Team ${teamTag}`,
-      'Execution',
-    ],
+      ? `Coming later branch worker under ${parentNode?.label}.`
+      : `Worker branch inside this team workspace.`,
+    tags: [typeLabel, providerLabel, 'Ready'],
     metrics: [],
     actionLabel: 'Open',
     secondaryActionLabel: 'Edit' as const,
@@ -1808,6 +1795,7 @@ function TreeStructureView({
             const childCount = getChildNodes(layoutNodes, node.id).length;
             const isTopLevelUnit = node.parentId === generalManager.id;
             const isDirectUnit = isTopLevelUnit && node.type === 'worker';
+            const isActiveTeam = activeTeamRootId === node.id && node.type === 'senior_manager';
             const cardDetails = getMapCardDetails({
               node,
               parentNode,
@@ -1948,7 +1936,7 @@ function TreeStructureView({
                   compact={cardDetails.compact && childCount === 0}
                   outlineOnly={cardDetails.outlineOnly}
                   isSat={node.teamType === 'SAT'}
-                  active={node.id === activeTeamRootId}
+                  active={isActiveTeam}
                   actionLabel={cardDetails.actionLabel}
                   secondaryActionLabel={cardDetails.secondaryActionLabel}
                   onPrimaryAction={() => onOpenWorkspace(node)}
@@ -2080,6 +2068,7 @@ function TreeOverviewView({
             const boxColor = isManagerFamilyNode ? theme.ribbon : theme.accent;
             const boxBorder = isManagerFamilyNode ? theme.border : getFamilyColor(theme.accent, 0.28);
             const isSatNode = node.teamType === 'SAT';
+            const isActiveTeam = activeTeamRootId === node.id && node.type === 'senior_manager';
 
             return (
               <div
@@ -2115,6 +2104,18 @@ function TreeOverviewView({
                     }}
                   >
                     SAT
+                  </div>
+                ) : null}
+                {isActiveTeam ? (
+                  <div
+                    className="absolute left-1.5 top-1.5 rounded-[7px] border px-1.5 py-0.5 text-[8px] font-semibold leading-none text-white"
+                    style={{
+                      borderColor: 'rgba(15, 23, 42, 0.14)',
+                      background: 'rgba(15,23,42,0.92)',
+                      boxShadow: '0 2px 6px rgba(15,23,42,0.1)',
+                    }}
+                  >
+                    Active
                   </div>
                 ) : null}
                 <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-2 py-2">
@@ -2395,15 +2396,9 @@ export function PageD() {
   };
 
   const openConnectTeamModal = () => {
-    setConnectTeamDraft(
-      externalConnection
-        ? { ...externalConnection }
-        : {
-            ...createInitialConnectTeamDraft(),
-            hostTeamId: topLevelUnits[0]?.teamId ?? '',
-          },
+    setToast(
+      'Connect Team is coming soon. This MVP currently supports internal teams inside one AISync cell.',
     );
-    setShowConnectTeamModal(true);
   };
 
   const handleToggleSharedObject = (objectId: TeamSharedObject) => {
@@ -2846,9 +2841,13 @@ export function PageD() {
             }}
           >
             <div className="min-w-0">
-              <h1 className="ui-title text-[20px] uppercase tracking-[0.12em]">Teams Map</h1>
-              <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-neutral-600">
-                Operational Elasticity View
+              <h1 className="ui-title text-[20px] uppercase tracking-[0.12em]">Teams</h1>
+              <div className="mt-1 text-[12px] font-medium leading-5 text-neutral-600">
+                Organize internal AI teams inside this AISync cell.
+              </div>
+              <div className="mt-2 text-[12px] font-medium text-neutral-700">
+                Active team:{' '}
+                <span className="font-semibold text-neutral-900">{activeTeamLabel ?? 'none selected'}</span>
               </div>
             </div>
             <div className="flex min-w-0 flex-col items-start gap-0 text-[11px] leading-4">
@@ -2858,6 +2857,11 @@ export function PageD() {
               <HowToLink onClick={() => setActiveHowTo('create-teams')}>
                 How to create Teams
               </HowToLink>
+              <div className="mt-1 text-[11px] leading-4 text-neutral-500">
+                {viewMode === 'map'
+                  ? 'Map view shows teams as operational units.'
+                  : 'Tree view shows hierarchy and future expansion paths.'}
+              </div>
             </div>
             <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
               <div
@@ -3485,12 +3489,10 @@ export function PageD() {
               </div>
 
               <div className="text-xs text-neutral-600">
-                Add grows the team. Promote creates a new sub-manager branch from the selected
-                worker and seeds two child workers. Erase removes the selected agent or branch.
-                Refresh cycles the selected agent provider. Erase Team removes only the active
-                family scope shown in this Edit modal, never a different family. This modal
-                remains the primary place for elasticity operations so the map stays visually
-                clean.
+                Add grows the current team. Coming later: promote a worker into a Senior Manager
+                with its own subteam. Erase removes the selected agent or branch. Refresh cycles
+                the selected agent provider. Erase Team removes only the active family scope shown
+                in this Edit modal, never a different family.
               </div>
             </div>
 
