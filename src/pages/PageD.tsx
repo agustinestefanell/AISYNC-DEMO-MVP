@@ -445,23 +445,17 @@ function getMapCardDetails({
   isTopLevelUnit: boolean;
   isDirectUnit: boolean;
 }) {
-  const narrative = getMapTeamNarrative(node.teamId);
-  const providerLabel = getProviderDisplayName(node.provider);
+  const teamTypeLabel = node.teamType ?? 'Team';
   const statusLabel = node.phaseState ?? 'Ready';
-  const typeLabel = node.teamType ?? 'MAT';
 
   if (node.type === 'senior_manager') {
     const isPromotedFamily = !isTopLevelUnit;
 
     return {
-      subtitle: isTopLevelUnit ? 'Team' : 'Future Branch',
-      functionLabel: isPromotedFamily ? 'Prepared expansion path' : narrative.functionLabel,
-      brief: isPromotedFamily
-        ? `Coming later: this branch can become its own team workspace when Organizational Elasticity is enabled.`
-        : `Internal ${typeLabel} team. Open its workspace or edit the team setup.`,
-      tags: isPromotedFamily
-        ? [providerLabel, 'Coming later', `Parent ${parentNode?.label ?? 'Lead'}`]
-        : [typeLabel, statusLabel, providerLabel],
+      subtitle: `${teamTypeLabel} Team`,
+      functionLabel: statusLabel,
+      brief: '',
+      tags: isPromotedFamily ? ['Future branch'] : [],
       metrics: [],
       actionLabel: 'Open',
       secondaryActionLabel: 'Edit' as const,
@@ -472,10 +466,10 @@ function getMapCardDetails({
 
   if (isDirectUnit) {
     return {
-      subtitle: 'Core Branch',
-      functionLabel: narrative.functionLabel,
-      brief: `Visible branch inside the General Team. Open its workspace or edit the branch setup.`,
-      tags: ['Core', statusLabel, providerLabel],
+      subtitle: `${teamTypeLabel} Team`,
+      functionLabel: statusLabel,
+      brief: '',
+      tags: [],
       metrics: [],
       actionLabel: 'Open',
       secondaryActionLabel: 'Edit' as const,
@@ -486,12 +480,10 @@ function getMapCardDetails({
 
   const isWorkerInPromotedFamily = parentNode?.type === 'senior_manager' && parentNode.parentId !== 'gm_1';
   return {
-    subtitle: isWorkerInPromotedFamily ? 'Future Worker' : 'Worker',
-    functionLabel: narrative.workerFunction,
-    brief: isWorkerInPromotedFamily
-      ? `Coming later branch worker under ${parentNode?.label}.`
-      : `Worker branch inside this team workspace.`,
-    tags: [typeLabel, providerLabel, 'Ready'],
+    subtitle: `${teamTypeLabel} Worker`,
+    functionLabel: statusLabel,
+    brief: '',
+    tags: [],
     metrics: [],
     actionLabel: 'Open',
     secondaryActionLabel: 'Edit' as const,
@@ -858,7 +850,7 @@ function TreeWorkspaceCard({
   metrics,
   compact,
   outlineOnly,
-  isSat,
+  teamType,
   active,
   actionLabel,
   secondaryActionLabel,
@@ -878,7 +870,7 @@ function TreeWorkspaceCard({
   metrics: MapCardMetric[];
   compact?: boolean;
   outlineOnly?: boolean;
-  isSat?: boolean;
+  teamType?: TeamType;
   actionLabel: string;
   secondaryActionLabel?: string;
   onPrimaryAction: () => void;
@@ -909,7 +901,7 @@ function TreeWorkspaceCard({
           : '0 14px 30px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255,255,255,0.8)',
       }}
     >
-      {isSat ? (
+      {teamType ? (
         <div
           className="absolute right-3 top-3 z-10 rounded-[7px] border px-2 py-1 text-[9px] font-semibold leading-none text-neutral-700"
           style={{
@@ -918,7 +910,7 @@ function TreeWorkspaceCard({
             boxShadow: '0 3px 8px rgba(15,23,42,0.1)',
           }}
         >
-          SAT
+          {teamType}
         </div>
       ) : null}
       <div
@@ -933,7 +925,7 @@ function TreeWorkspaceCard({
       >
         {active ? (
           <span
-            className="absolute right-3 top-3 rounded-full px-2 py-1 text-[9px] font-semibold text-emerald-900"
+            className="absolute left-3 top-3 rounded-full px-2 py-1 text-[9px] font-semibold text-emerald-900"
             style={{
               background: 'rgba(236, 253, 245, 0.95)',
               border: '1px solid rgba(16, 185, 129, 0.25)',
@@ -952,35 +944,42 @@ function TreeWorkspaceCard({
         className={`flex min-h-0 flex-1 flex-col gap-3 px-4 ${compact ? 'py-4 text-[10px]' : hasMetrics ? 'pb-3 pt-4 text-[11px]' : 'py-4 text-[11px]'}`}
       >
         <div className="grid shrink-0 gap-1.5">
+          <div className="text-[10px] uppercase tracking-[0.16em] text-neutral-500">Status</div>
           <div className="text-[12px] font-semibold leading-[1.35] text-neutral-950">{functionLabel}</div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap gap-x-2 gap-y-1 text-[10px] leading-[1.3] text-neutral-500">
-          {tags.slice(0, compact ? 3 : 4).map((tag) => (
-            <span
-              key={`${title}_${tag}`}
-              className="rounded-full border px-2 py-1 font-medium"
-              style={{
-                color: accentColor,
-                borderColor: borderColor,
-                backgroundColor: softColor,
-              }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
+        {tags.length > 0 ? (
+          <div className="flex shrink-0 flex-wrap gap-x-2 gap-y-1 text-[10px] leading-[1.3] text-neutral-500">
+            {tags.slice(0, compact ? 3 : 4).map((tag) => (
+              <span
+                key={`${title}_${tag}`}
+                className="rounded-full border px-2 py-1 font-medium"
+                style={{
+                  color: accentColor,
+                  borderColor: borderColor,
+                  backgroundColor: softColor,
+                }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
 
-        <div
-          className="min-h-[4.35rem] flex-1 rounded-[12px] px-3.5 py-3 text-[11px] leading-[1.45] text-neutral-700"
-          style={{
-            border: `1px solid ${borderColor}`,
-            background:
-              'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,250,252,0.9) 100%)',
-          }}
-        >
-          {brief}
-        </div>
+        {brief ? (
+          <div
+            className="min-h-[4.35rem] flex-1 rounded-[12px] px-3.5 py-3 text-[11px] leading-[1.45] text-neutral-700"
+            style={{
+              border: `1px solid ${borderColor}`,
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,250,252,0.9) 100%)',
+            }}
+          >
+            {brief}
+          </div>
+        ) : (
+          <div className="flex-1" />
+        )}
 
         {hasMetrics && (
           <div className={`grid shrink-0 gap-1.5 ${metrics.length > 1 ? 'grid-cols-3' : 'grid-cols-1'}`}>
@@ -1935,8 +1934,8 @@ function TreeStructureView({
                   metrics={cardDetails.metrics}
                   compact={cardDetails.compact && childCount === 0}
                   outlineOnly={cardDetails.outlineOnly}
-                  isSat={node.teamType === 'SAT'}
-                  active={isActiveTeam}
+                  teamType={node.teamType}
+                  active={node.id === activeTeamRootId}
                   actionLabel={cardDetails.actionLabel}
                   secondaryActionLabel={cardDetails.secondaryActionLabel}
                   onPrimaryAction={() => onOpenWorkspace(node)}
@@ -2001,7 +2000,7 @@ function TreeOverviewView({
         <div className="text-center">
           <div className="text-[10px] uppercase tracking-[0.18em] text-neutral-600">Tree</div>
           <div className="mt-1 text-xs text-neutral-700">
-            Structural view only. Read hierarchy fast, then open the workspace from the node button.
+            Tree view shows hierarchy and future expansion paths.
           </div>
         </div>
 
@@ -2067,8 +2066,7 @@ function TreeOverviewView({
                 )} 32%, rgba(255,255,255,0.97) 32%, rgba(255,255,255,0.97) 100%)`;
             const boxColor = isManagerFamilyNode ? theme.ribbon : theme.accent;
             const boxBorder = isManagerFamilyNode ? theme.border : getFamilyColor(theme.accent, 0.28);
-            const isSatNode = node.teamType === 'SAT';
-            const isActiveTeam = activeTeamRootId === node.id && node.type === 'senior_manager';
+            const teamType = node.teamType;
 
             return (
               <div
@@ -2094,7 +2092,7 @@ function TreeOverviewView({
                     Active
                   </div>
                 ) : null}
-                {isSatNode ? (
+                {teamType ? (
                   <div
                     className="absolute right-1.5 top-1.5 rounded-[7px] border px-1.5 py-0.5 text-[8px] font-semibold leading-none text-neutral-700"
                     style={{
@@ -2103,19 +2101,7 @@ function TreeOverviewView({
                       boxShadow: '0 2px 6px rgba(15,23,42,0.08)',
                     }}
                   >
-                    SAT
-                  </div>
-                ) : null}
-                {isActiveTeam ? (
-                  <div
-                    className="absolute left-1.5 top-1.5 rounded-[7px] border px-1.5 py-0.5 text-[8px] font-semibold leading-none text-white"
-                    style={{
-                      borderColor: 'rgba(15, 23, 42, 0.14)',
-                      background: 'rgba(15,23,42,0.92)',
-                      boxShadow: '0 2px 6px rgba(15,23,42,0.1)',
-                    }}
-                  >
-                    Active
+                    {teamType}
                   </div>
                 ) : null}
                 <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-2 py-2">
@@ -2831,7 +2817,7 @@ export function PageD() {
       <div className="scrollbar-thin flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
         <section className="flex min-h-full flex-col gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
           <div
-            className="ui-surface grid items-center gap-3 px-4 py-3 md:grid-cols-[220px_minmax(260px,1fr)_auto]"
+            className="ui-surface grid items-center gap-3 px-4 py-3 md:grid-cols-[240px_minmax(260px,1fr)_auto]"
             style={{
               borderColor: 'rgba(15, 23, 42, 0.12)',
               background:
@@ -2842,12 +2828,11 @@ export function PageD() {
           >
             <div className="min-w-0">
               <h1 className="ui-title text-[20px] uppercase tracking-[0.12em]">Teams</h1>
-              <div className="mt-1 text-[12px] font-medium leading-5 text-neutral-600">
+              <div className="mt-1 text-[12px] leading-5 text-neutral-600">
                 Organize internal AI teams inside this AISync cell.
               </div>
-              <div className="mt-2 text-[12px] font-medium text-neutral-700">
-                Active team:{' '}
-                <span className="font-semibold text-neutral-900">{activeTeamLabel ?? 'none selected'}</span>
+              <div className="mt-2 text-[12px] font-semibold text-neutral-800">
+                Active team: {activeTeamLabel ?? 'none selected'}
               </div>
             </div>
             <div className="flex min-w-0 flex-col items-start gap-0 text-[11px] leading-4">
@@ -2897,22 +2882,6 @@ export function PageD() {
               >
                 Teams {topLevelUnits.length} / Workers {totalWorkers}
               </div>
-
-              {activeTeamLabel ? (
-                <div
-                  className="ui-surface flex items-center gap-2 rounded-full border px-3 py-2 text-xs text-neutral-700"
-                  style={{
-                    borderColor: 'rgba(15, 23, 42, 0.12)',
-                    background: 'rgba(255,255,255,0.86)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.72)',
-                  }}
-                >
-                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-800">
-                    Active
-                  </span>
-                  <span>Active team: {activeTeamLabel}</span>
-                </div>
-              ) : null}
 
               <div
                 className="flex items-center gap-2 rounded-full border p-1"
@@ -3459,7 +3428,6 @@ export function PageD() {
                 </button>
                 <button
                   className="ui-button text-neutral-400 shadow-sm cursor-not-allowed"
-                  onClick={() => setToast('Coming later: promote this worker into a Senior Manager with its own subteam.')}
                   disabled={true}
                   title="Organizational Elasticity - coming in future version"
                 >
@@ -3489,10 +3457,10 @@ export function PageD() {
               </div>
 
               <div className="text-xs text-neutral-600">
-                Add grows the current team. Coming later: promote a worker into a Senior Manager
-                with its own subteam. Erase removes the selected agent or branch. Refresh cycles
-                the selected agent provider. Erase Team removes only the active family scope shown
-                in this Edit modal, never a different family.
+                Add grows the team. Coming later: promote this worker into a Senior Manager with
+                its own subteam. Erase removes the selected agent or branch. Refresh cycles the
+                selected agent provider. Erase Team removes only the active family scope shown in
+                this Edit modal, never a different family.
               </div>
             </div>
 
@@ -3523,10 +3491,7 @@ export function PageD() {
           <div className="grid gap-4">
             <div className="grid gap-3">
               <div className="text-[14px] leading-[1.5] text-neutral-900 font-semibold">
-                Connect Team is coming soon.
-              </div>
-              <div className="text-sm leading-[1.75] text-neutral-600">
-                Connect Team is reserved for a future release. This MVP currently supports internal teams inside one AISync cell.
+                Connect Team is coming soon. This MVP currently supports internal teams inside one AISync cell.
               </div>
               <div className="rounded-[18px] border border-neutral-200 bg-neutral-50 px-4 py-4 text-sm leading-[1.75] text-neutral-700">
                 No external team connection flow is active in this demo. The feature is preserved in the UI only as a future placeholder.
