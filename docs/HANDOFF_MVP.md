@@ -99,3 +99,47 @@
   - No se agrego suite E2E automatizada.
 - Proximo paso recomendado:
   - Mantener este sistema de chips como referencia visual para cualquier nuevo nodo o placeholder que se agregue al Team Map.
+
+## OE-MVP-04E - Restore Teams Map Visual Model
+
+- Fecha: 2026-05-06
+- Modelo recomendado/usado: GPTCodex 5.5 recomendado; Codex GPT-5 usado en esta sesion
+- Repo confirmado: AISYNC-DEMO-MVP
+- Remote confirmado: https://github.com/agustinestefanell/AISYNC-DEMO-MVP.git
+- Branch: main
+- Commit hash: pendiente hasta validacion visual humana y commit final
+- Archivos tocados:
+  - src/pages/PageD.tsx
+  - docs/HANDOFF_MVP.md
+- Bloques restaurados:
+  - Header visual de Teams Map desde `e730323`
+  - `getMapCardDetails(...)` desde `e730323`
+  - `TreeWorkspaceCard(...)` desde `e730323`
+  - renderizacion visual de nodos en `TreeOverviewView(...)` desde `e730323`
+  - estructura rica de MAP cards y worker cards con `functionLabel`, `brief`, `tags` y metricas
+- Bloques preservados:
+  - Connect Team MVP minimo
+  - modal simple con `External user email`, `Host local team` y `Connection type`
+  - `handleCreateConnection`
+  - placeholder externo `Pending` en Map/Tree
+  - Open/Edit sin colision
+  - `activeWorkspaceRootId`
+  - `selectedNodeId` reservado para edicion
+  - routing validado a Main Workspace / Secondary Workspace
+- Diagnostico confirmado:
+  - El commit visual correcto del modelo rico es `e730323` (`OE-MVP-03E fix open edit state collision`).
+  - La regresion visual efectiva nace en `34a7766` (`OE-MVP-04 simplify teams map tree`).
+  - El intento OE-MVP-04D fue descartado; la restauracion se rehizo desde el ultimo estado confirmado en `main`.
+- Validacion tecnica:
+  - `node "C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js" run build`: OK
+- Validacion visual humana:
+  - OK
+  - Dev server disponible en `http://127.0.0.1:5177/?page=D`
+  - localStorage limpio: si
+  - instruccion requerida antes de revisar: `localStorage.removeItem("aisync_teams_map_v2"); location.reload();`
+- Riesgos residuales:
+  - El browser puede seguir mostrando un mapa persistido viejo si no se limpia `aisync_teams_map_v2`.
+  - La OE no debe cerrarse por build; depende de confirmacion visual humana del usuario.
+  - Persisten warnings de consola `Unable to preventDefault inside passive event listener invocation`; no bloquean el uso visual ni la separacion Open/Edit en esta OE.
+- Proximo paso recomendado:
+  - Validar visualmente el Teams Map con localStorage limpio y, si el modelo anterior quedo restaurado, recien entonces crear commit `OE-MVP-04E restore teams map visual model`.

@@ -47,48 +47,6 @@ function getConnectionTypeLabel(value: TeamConnectionType) {
   return value === 'project-bound' ? 'Project-bound connection' : 'Persistent partner connection';
 }
 
-function MapLabelChip({
-  label,
-  tone = 'neutral',
-}: {
-  label: string;
-  tone?: 'neutral' | 'active' | 'pending';
-}) {
-  const toneClass =
-    tone === 'active'
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-      : tone === 'pending'
-        ? 'border-amber-300 bg-amber-50 text-amber-800'
-        : 'border-neutral-200 bg-white/88 text-neutral-700';
-
-  return (
-    <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase leading-none tracking-[0.14em] ${toneClass}`}>
-      {label}
-    </span>
-  );
-}
-
-function MiniLabelChip({
-  label,
-  tone = 'neutral',
-}: {
-  label: string;
-  tone?: 'neutral' | 'active' | 'pending';
-}) {
-  const toneClass =
-    tone === 'active'
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-      : tone === 'pending'
-        ? 'border-amber-300 bg-amber-50 text-amber-800'
-        : 'border-neutral-200 bg-white/86 text-neutral-700';
-
-  return (
-    <span className={`rounded-full border px-1.5 py-0.5 text-[7px] font-semibold uppercase leading-none tracking-[0.12em] ${toneClass}`}>
-      {label}
-    </span>
-  );
-}
-
 function MapAddUserTeamAnchor({
   onClick,
   connection,
@@ -132,10 +90,11 @@ function MapAddUserTeamAnchor({
           onClick={onClick}
         >
           <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-wrap gap-1.5">
-              <MapLabelChip label="Preview" />
-              <MapLabelChip label="External" />
-              <MapLabelChip label="Pending" tone="pending" />
+            <div className="rounded-full border border-neutral-300 bg-white/92 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-600">
+              External
+            </div>
+            <div className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-800">
+              Pending
             </div>
           </div>
 
@@ -227,19 +186,15 @@ function TreeAddUserTeamAnchor({
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.75), 0 6px 14px rgba(15,23,42,0.05)',
         }}
         onClick={onClick}
-      >
-        <div className="flex max-w-full flex-wrap items-center justify-center gap-1">
-          <MiniLabelChip label="Preview" />
-          {connection ? <MiniLabelChip label="Pending" tone="pending" /> : null}
-        </div>
-        <div className="mt-1 text-[18px] font-semibold leading-none text-neutral-700">
+        >
+        <div className="text-[18px] font-semibold leading-none text-neutral-700">
           {connection ? 'EXT' : '+'}
         </div>
         <div className="mt-1.5 line-clamp-2 text-[10px] font-semibold leading-[1.15] text-neutral-900">
           {connection ? connection.userEmail : 'Connect Team'}
         </div>
         <div className="mt-1 text-[7px] uppercase tracking-[0.16em] text-neutral-500">
-          {connection ? 'External' : 'Demo link'}
+          {connection ? 'Pending' : 'Demo link'}
         </div>
       </button>
     </div>
@@ -399,18 +354,29 @@ function getMapCardDetails({
   isTopLevelUnit: boolean;
   isDirectUnit: boolean;
 }) {
-  const teamTypeLabel = node.teamType ?? 'Team';
-  const statusLabel = node.phaseState ?? 'Ready';
+  const narrative = getMapTeamNarrative(node.teamId);
+  const providerLabel = getProviderDisplayName(node.provider);
+  const teamTag = teamSettings?.savingTag ?? 'TEAM';
 
   if (node.type === 'senior_manager') {
     const isPromotedFamily = !isTopLevelUnit;
 
     return {
-      subtitle: `${teamTypeLabel} Team`,
-      functionLabel: statusLabel,
-      brief: '',
-      tags: isPromotedFamily ? ['Future branch'] : [],
-      metrics: [],
+      subtitle: isTopLevelUnit ? 'Sub-Team Workspace' : 'Elastic Sub-Manager',
+      functionLabel: isPromotedFamily ? 'Elastic branch coordination' : narrative.functionLabel,
+      brief: isPromotedFamily
+        ? `Promoted from ${parentNode?.label ?? 'its parent lane'}, now coordinating an autonomous sub-family with its own two-worker operating queue.`
+        : narrative.teamBrief,
+      tags: isPromotedFamily
+        ? [providerLabel, `Parent ${parentNode?.label ?? 'Lead'}`, 'Promoted lane']
+        : [providerLabel, ...narrative.teamTags, `Tag ${teamTag}`],
+      metrics: isPromotedFamily
+        ? []
+        : [
+            { label: 'Threads', value: String(counts.conversations) },
+            { label: 'Docs', value: String(counts.documents) },
+            { label: 'Reports', value: String(counts.reports) },
+          ],
       actionLabel: 'Open',
       secondaryActionLabel: 'Edit' as const,
       compact: false,
@@ -420,11 +386,15 @@ function getMapCardDetails({
 
   if (isDirectUnit) {
     return {
-      subtitle: `${teamTypeLabel} Team`,
-      functionLabel: statusLabel,
-      brief: '',
-      tags: [],
-      metrics: [],
+      subtitle: 'Direct Team Workspace',
+      functionLabel: narrative.functionLabel,
+      brief: narrative.teamBrief,
+      tags: [providerLabel, ...narrative.teamTags, `Tag ${teamTag}`],
+      metrics: [
+        { label: 'Threads', value: String(counts.conversations) },
+        { label: 'Docs', value: String(counts.documents) },
+        { label: 'Reports', value: String(counts.reports) },
+      ],
       actionLabel: 'Open',
       secondaryActionLabel: 'Edit' as const,
       compact: false,
@@ -434,10 +404,16 @@ function getMapCardDetails({
 
   const isWorkerInPromotedFamily = parentNode?.type === 'senior_manager' && parentNode.parentId !== 'gm_1';
   return {
-    subtitle: `${teamTypeLabel} Worker`,
-    functionLabel: statusLabel,
-    brief: '',
-    tags: [],
+    subtitle: isWorkerInPromotedFamily ? 'Branch Worker' : 'Team Worker',
+    functionLabel: narrative.workerFunction,
+    brief: isWorkerInPromotedFamily
+      ? `Executes the autonomous branch under ${parentNode?.label}, keeping that promoted family separate from the parent worker block.`
+      : narrative.workerBrief,
+    tags: [
+      providerLabel,
+      isWorkerInPromotedFamily ? `Family ${parentNode?.label}` : `Team ${teamTag}`,
+      'Execution',
+    ],
     metrics: [],
     actionLabel: 'Open',
     secondaryActionLabel: 'Edit' as const,
@@ -804,7 +780,7 @@ function TreeWorkspaceCard({
   metrics,
   compact,
   outlineOnly,
-  teamType,
+  isSat,
   active,
   actionLabel,
   secondaryActionLabel,
@@ -824,7 +800,7 @@ function TreeWorkspaceCard({
   metrics: MapCardMetric[];
   compact?: boolean;
   outlineOnly?: boolean;
-  teamType?: TeamType;
+  isSat?: boolean;
   actionLabel: string;
   secondaryActionLabel?: string;
   onPrimaryAction: () => void;
@@ -855,6 +831,18 @@ function TreeWorkspaceCard({
           : '0 14px 30px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255,255,255,0.8)',
       }}
     >
+      {isSat ? (
+        <div
+          className="absolute right-3 top-3 z-10 rounded-[7px] border px-2 py-1 text-[9px] font-semibold leading-none text-neutral-700"
+          style={{
+            borderColor: 'rgba(15, 23, 42, 0.18)',
+            background: 'rgba(255,255,255,0.96)',
+            boxShadow: '0 3px 8px rgba(15,23,42,0.1)',
+          }}
+        >
+          SAT
+        </div>
+      ) : null}
       <div
         className="relative shrink-0 px-4 py-3"
         style={{
@@ -865,12 +853,18 @@ function TreeWorkspaceCard({
           borderBottom: `1px solid ${outlineOnly ? borderColor : 'rgba(255,255,255,0.16)'}`,
         }}
       >
+        {active ? (
+          <span
+            className="absolute right-3 top-3 rounded-full px-2 py-1 text-[9px] font-semibold text-emerald-900"
+            style={{
+              background: 'rgba(236, 253, 245, 0.95)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+            }}
+          >
+            Active
+          </span>
+        ) : null}
         <div className="text-[10px] uppercase tracking-[0.18em] opacity-70">{subtitle}</div>
-        <div className="mt-1 flex flex-wrap gap-1.5">
-          <MapLabelChip label="Preview" />
-          {teamType ? <MapLabelChip label={teamType} /> : null}
-          {active ? <MapLabelChip label="Active" tone="active" /> : null}
-        </div>
         <div className={`mt-1 min-h-[2.8rem] font-semibold ${compact ? 'text-[12px]' : 'text-[14px]'}`}>
           {titleContent ?? title}
         </div>
@@ -880,42 +874,35 @@ function TreeWorkspaceCard({
         className={`flex min-h-0 flex-1 flex-col gap-3 px-4 ${compact ? 'py-4 text-[10px]' : hasMetrics ? 'pb-3 pt-4 text-[11px]' : 'py-4 text-[11px]'}`}
       >
         <div className="grid shrink-0 gap-1.5">
-          <div className="text-[10px] uppercase tracking-[0.16em] text-neutral-500">Status</div>
           <div className="text-[12px] font-semibold leading-[1.35] text-neutral-950">{functionLabel}</div>
         </div>
 
-        {tags.length > 0 ? (
-          <div className="flex shrink-0 flex-wrap gap-x-2 gap-y-1 text-[10px] leading-[1.3] text-neutral-500">
-            {tags.slice(0, compact ? 3 : 4).map((tag) => (
-              <span
-                key={`${title}_${tag}`}
-                className="rounded-full border px-2 py-1 font-medium"
-                style={{
-                  color: accentColor,
-                  borderColor: borderColor,
-                  backgroundColor: softColor,
-                }}
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        ) : null}
+        <div className="flex shrink-0 flex-wrap gap-x-2 gap-y-1 text-[10px] leading-[1.3] text-neutral-500">
+          {tags.slice(0, compact ? 3 : 4).map((tag) => (
+            <span
+              key={`${title}_${tag}`}
+              className="rounded-full border px-2 py-1 font-medium"
+              style={{
+                color: accentColor,
+                borderColor: borderColor,
+                backgroundColor: softColor,
+              }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
 
-        {brief ? (
-          <div
-            className="min-h-[4.35rem] flex-1 rounded-[12px] px-3.5 py-3 text-[11px] leading-[1.45] text-neutral-700"
-            style={{
-              border: `1px solid ${borderColor}`,
-              background:
-                'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,250,252,0.9) 100%)',
-            }}
-          >
-            {brief}
-          </div>
-        ) : (
-          <div className="flex-1" />
-        )}
+        <div
+          className="min-h-[4.35rem] flex-1 rounded-[12px] px-3.5 py-3 text-[11px] leading-[1.45] text-neutral-700"
+          style={{
+            border: `1px solid ${borderColor}`,
+            background:
+              'linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,250,252,0.9) 100%)',
+          }}
+        >
+          {brief}
+        </div>
 
         {hasMetrics && (
           <div className={`grid shrink-0 gap-1.5 ${metrics.length > 1 ? 'grid-cols-3' : 'grid-cols-1'}`}>
@@ -1634,11 +1621,6 @@ function TreeStructureView({
                       }}
                     >
                       <div className="text-[10px] uppercase tracking-[0.18em] text-white/62">Main Workspace</div>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <MapLabelChip label="Preview" />
-                        <MapLabelChip label="Open" />
-                        {activeTeamRootId === generalManager.id ? <MapLabelChip label="Active" tone="active" /> : null}
-                      </div>
                       <div className="mt-1 text-[19px] font-semibold">{generalManager.label}</div>
                     </div>
 
@@ -1875,7 +1857,7 @@ function TreeStructureView({
                   metrics={cardDetails.metrics}
                   compact={cardDetails.compact && childCount === 0}
                   outlineOnly={cardDetails.outlineOnly}
-                  teamType={node.teamType}
+                  isSat={node.teamType === 'SAT'}
                   active={node.id === activeTeamRootId}
                   actionLabel={cardDetails.actionLabel}
                   secondaryActionLabel={cardDetails.secondaryActionLabel}
@@ -1943,7 +1925,7 @@ function TreeOverviewView({
         <div className="text-center">
           <div className="text-[10px] uppercase tracking-[0.18em] text-neutral-600">Tree</div>
           <div className="mt-1 text-xs text-neutral-700">
-            Tree view shows hierarchy and future expansion paths.
+            Structural view only. Read hierarchy fast, then open the workspace from the node button.
           </div>
         </div>
 
@@ -1982,11 +1964,7 @@ function TreeOverviewView({
                       '0 10px 22px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.08)',
                   }}
                 >
-                  <div className="flex flex-wrap items-center justify-center gap-1">
-                    <MiniLabelChip label="Preview" />
-                    <MiniLabelChip label="Main" />
-                    {activeTeamRootId === generalManager.id ? <MiniLabelChip label="Active" tone="active" /> : null}
-                  </div>
+                  <div className="text-[8px] uppercase tracking-[0.18em] text-white/55">Main</div>
                   <div className="mt-1 line-clamp-2 text-[11px] font-semibold leading-[1.2]">{generalManager.label}</div>
                   <TreeAddUserTeamAnchor onClick={onConnectTeam} connection={externalConnection} />
                 </div>
@@ -2013,8 +1991,7 @@ function TreeOverviewView({
                 )} 32%, rgba(255,255,255,0.97) 32%, rgba(255,255,255,0.97) 100%)`;
             const boxColor = isManagerFamilyNode ? theme.ribbon : theme.accent;
             const boxBorder = isManagerFamilyNode ? theme.border : getFamilyColor(theme.accent, 0.28);
-            const teamType = node.teamType;
-            const statusLabel = node.phaseState ?? 'Ready';
+            const isSatNode = node.teamType === 'SAT';
 
             return (
               <div
@@ -2032,13 +2009,27 @@ function TreeOverviewView({
                     : `0 8px 18px rgba(15,23,42,0.07), inset 0 3px 0 ${theme.accent}, inset 0 1px 0 rgba(255,255,255,0.75)`,
                 }}
               >
-                <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-2 py-2">
-                  <div className="flex max-w-full flex-wrap items-center justify-center gap-1">
-                    <MiniLabelChip label="Preview" />
-                    {teamType ? <MiniLabelChip label={teamType} /> : null}
-                    {node.id === activeTeamRootId ? <MiniLabelChip label="Active" tone="active" /> : null}
-                    <MiniLabelChip label={statusLabel} />
+                {node.id === activeTeamRootId ? (
+                  <div
+                    className="absolute left-2 top-2 rounded-full bg-emerald-100 px-2 py-1 text-[9px] font-semibold text-emerald-800"
+                    style={{ border: '1px solid rgba(16, 185, 129, 0.25)' }}
+                  >
+                    Active
                   </div>
+                ) : null}
+                {isSatNode ? (
+                  <div
+                    className="absolute right-1.5 top-1.5 rounded-[7px] border px-1.5 py-0.5 text-[8px] font-semibold leading-none text-neutral-700"
+                    style={{
+                      borderColor: 'rgba(15, 23, 42, 0.16)',
+                      background: 'rgba(255,255,255,0.96)',
+                      boxShadow: '0 2px 6px rgba(15,23,42,0.08)',
+                    }}
+                  >
+                    SAT
+                  </div>
+                ) : null}
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-2 py-2">
                   <div
                     className="rounded-full px-2 py-1 text-[8px] uppercase tracking-[0.14em]"
                     style={{
@@ -2754,12 +2745,9 @@ export function PageD() {
             }}
           >
             <div className="min-w-0">
-              <h1 className="ui-title text-[20px] uppercase tracking-[0.12em]">Teams</h1>
-              <div className="mt-1 text-[12px] leading-5 text-neutral-600">
-                Organize internal AI teams inside this AISync cell.
-              </div>
-              <div className="mt-2 text-[12px] font-semibold text-neutral-800">
-                Active team: {activeTeamLabel ?? 'none selected'}
+              <h1 className="ui-title text-[20px] uppercase tracking-[0.12em]">Teams Map</h1>
+              <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-neutral-600">
+                Operational Elasticity View
               </div>
             </div>
             <div className="flex min-w-0 flex-col items-start gap-0 text-[11px] leading-4">
@@ -2769,11 +2757,6 @@ export function PageD() {
               <HowToLink onClick={() => setActiveHowTo('create-teams')}>
                 How to create Teams
               </HowToLink>
-              <div className="mt-1 text-[11px] leading-4 text-neutral-500">
-                {viewMode === 'map'
-                  ? 'Map view shows teams as operational units.'
-                  : 'Tree view shows hierarchy and future expansion paths.'}
-              </div>
             </div>
             <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
               <div
@@ -2809,6 +2792,22 @@ export function PageD() {
               >
                 Teams {topLevelUnits.length} / Workers {totalWorkers}
               </div>
+
+              {activeTeamLabel ? (
+                <div
+                  className="ui-surface flex items-center gap-2 rounded-full border px-3 py-2 text-xs text-neutral-700"
+                  style={{
+                    borderColor: 'rgba(15, 23, 42, 0.12)',
+                    background: 'rgba(255,255,255,0.86)',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.72)',
+                  }}
+                >
+                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-800">
+                    Active
+                  </span>
+                  <span>Active team: {activeTeamLabel}</span>
+                </div>
+              ) : null}
 
               <div
                 className="flex items-center gap-2 rounded-full border p-1"
