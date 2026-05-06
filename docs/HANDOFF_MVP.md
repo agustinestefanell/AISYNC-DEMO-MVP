@@ -63,3 +63,39 @@
   - La validacion de click completo fue por revision de handlers y captura headless; no se agrego suite E2E automatizada.
 - Proximo paso recomendado:
   - Definir persistencia local del connection record o criterio de demo por sesion antes de avanzar a permisos reales.
+
+## OE-MVP-04C - Fix Teams Map Labels
+
+- Fecha: 2026-05-06
+- Modelo recomendado/usado: GPTCodex 5.5 recomendado; Codex GPT-5 usado en esta sesion
+- Repo confirmado: AISYNC-DEMO-MVP
+- Remote confirmado: https://github.com/agustinestefanell/AISYNC-DEMO-MVP.git
+- Branch: main
+- Commit hash: este mismo commit; hash final reportado al cierre de OE
+- Archivos tocados:
+  - src/pages/PageD.tsx
+  - docs/HANDOFF_MVP.md
+- Diagnostico confirmado:
+  - Las etiquetas no fallaban por metadata; fallaban por renderizado inconsistente entre variantes.
+  - MAP, TREE, root/main y placeholder externo usaban bloques visuales distintos.
+  - `SAT/MAT`, `Preview` y `Active` estaban mezclados entre posiciones absolutas y contenido, lo que generaba labels parciales, pequenos u ocultos segun zoom/layout.
+- Cambios realizados:
+  - Chips visuales reutilizables agregados para labels grandes de MAP y compactos de TREE.
+  - MAP root/main card ahora muestra zona de labels con `PREVIEW` y status basico.
+  - MAP team/worker cards ahora muestran `PREVIEW`, `SAT/MAT`, `ACTIVE` cuando corresponde, y status basico.
+  - TREE root/main node ahora muestra labels compactos.
+  - TREE team/worker nodes ahora muestran `PREVIEW`, `SAT/MAT`, `ACTIVE` cuando corresponde, y status basico.
+  - Placeholder conectado preserva `Preview`, `External` y `Pending` sin tocar la funcionalidad minima de Connect Team.
+  - Open/Edit, routing, workspaces y Connect Team funcional minimo no fueron modificados salvo labels visuales del placeholder.
+- Validaciones visuales ejecutadas:
+  - Captura real MAP en navegador/headless: OK para root/team/worker labels y placeholder no conectado.
+  - Captura real MAP con fixture temporal no commiteado de active team: OK para `ACTIVE`.
+  - Captura real TREE con fixture temporal no commiteado de connection record: OK para TREE labels y placeholder `Pending`.
+  - Fixtures temporales revertidos antes de build/commit.
+- Validaciones tecnicas ejecutadas:
+  - `node "C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js" run build`: OK.
+- Riesgos residuales:
+  - Los labels de TREE son compactos por el tamano reducido de los nodos; son visibles en captura amplia, pero siguen siendo deliberadamente pequenos para no romper el layout.
+  - No se agrego suite E2E automatizada.
+- Proximo paso recomendado:
+  - Mantener este sistema de chips como referencia visual para cualquier nuevo nodo o placeholder que se agregue al Team Map.

@@ -47,6 +47,48 @@ function getConnectionTypeLabel(value: TeamConnectionType) {
   return value === 'project-bound' ? 'Project-bound connection' : 'Persistent partner connection';
 }
 
+function MapLabelChip({
+  label,
+  tone = 'neutral',
+}: {
+  label: string;
+  tone?: 'neutral' | 'active' | 'pending';
+}) {
+  const toneClass =
+    tone === 'active'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+      : tone === 'pending'
+        ? 'border-amber-300 bg-amber-50 text-amber-800'
+        : 'border-neutral-200 bg-white/88 text-neutral-700';
+
+  return (
+    <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase leading-none tracking-[0.14em] ${toneClass}`}>
+      {label}
+    </span>
+  );
+}
+
+function MiniLabelChip({
+  label,
+  tone = 'neutral',
+}: {
+  label: string;
+  tone?: 'neutral' | 'active' | 'pending';
+}) {
+  const toneClass =
+    tone === 'active'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+      : tone === 'pending'
+        ? 'border-amber-300 bg-amber-50 text-amber-800'
+        : 'border-neutral-200 bg-white/86 text-neutral-700';
+
+  return (
+    <span className={`rounded-full border px-1.5 py-0.5 text-[7px] font-semibold uppercase leading-none tracking-[0.12em] ${toneClass}`}>
+      {label}
+    </span>
+  );
+}
+
 function MapAddUserTeamAnchor({
   onClick,
   connection,
@@ -90,11 +132,10 @@ function MapAddUserTeamAnchor({
           onClick={onClick}
         >
           <div className="flex items-start justify-between gap-3">
-            <div className="rounded-full border border-neutral-300 bg-white/92 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-600">
-              External
-            </div>
-            <div className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-800">
-              Pending
+            <div className="flex flex-wrap gap-1.5">
+              <MapLabelChip label="Preview" />
+              <MapLabelChip label="External" />
+              <MapLabelChip label="Pending" tone="pending" />
             </div>
           </div>
 
@@ -187,14 +228,18 @@ function TreeAddUserTeamAnchor({
         }}
         onClick={onClick}
       >
-        <div className="text-[18px] font-semibold leading-none text-neutral-700">
+        <div className="flex max-w-full flex-wrap items-center justify-center gap-1">
+          <MiniLabelChip label="Preview" />
+          {connection ? <MiniLabelChip label="Pending" tone="pending" /> : null}
+        </div>
+        <div className="mt-1 text-[18px] font-semibold leading-none text-neutral-700">
           {connection ? 'EXT' : '+'}
         </div>
         <div className="mt-1.5 line-clamp-2 text-[10px] font-semibold leading-[1.15] text-neutral-900">
           {connection ? connection.userEmail : 'Connect Team'}
         </div>
         <div className="mt-1 text-[7px] uppercase tracking-[0.16em] text-neutral-500">
-          {connection ? 'Pending' : 'Demo link'}
+          {connection ? 'External' : 'Demo link'}
         </div>
       </button>
     </div>
@@ -810,18 +855,6 @@ function TreeWorkspaceCard({
           : '0 14px 30px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255,255,255,0.8)',
       }}
     >
-      {teamType ? (
-        <div
-          className="absolute right-3 top-3 z-10 rounded-[7px] border px-2 py-1 text-[9px] font-semibold leading-none text-neutral-700"
-          style={{
-            borderColor: 'rgba(15, 23, 42, 0.18)',
-            background: 'rgba(255,255,255,0.96)',
-            boxShadow: '0 3px 8px rgba(15,23,42,0.1)',
-          }}
-        >
-          {teamType}
-        </div>
-      ) : null}
       <div
         className="relative shrink-0 px-4 py-3"
         style={{
@@ -832,20 +865,11 @@ function TreeWorkspaceCard({
           borderBottom: `1px solid ${outlineOnly ? borderColor : 'rgba(255,255,255,0.16)'}`,
         }}
       >
-        {active ? (
-          <span
-            className="absolute left-3 top-3 rounded-full px-2 py-1 text-[9px] font-semibold text-emerald-900"
-            style={{
-              background: 'rgba(236, 253, 245, 0.95)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-            }}
-          >
-            Active
-          </span>
-        ) : null}
         <div className="text-[10px] uppercase tracking-[0.18em] opacity-70">{subtitle}</div>
-        <div className="mt-1 inline-flex rounded-full border border-white/60 bg-white/85 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-neutral-700">
-          Preview
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          <MapLabelChip label="Preview" />
+          {teamType ? <MapLabelChip label={teamType} /> : null}
+          {active ? <MapLabelChip label="Active" tone="active" /> : null}
         </div>
         <div className={`mt-1 min-h-[2.8rem] font-semibold ${compact ? 'text-[12px]' : 'text-[14px]'}`}>
           {titleContent ?? title}
@@ -1610,6 +1634,11 @@ function TreeStructureView({
                       }}
                     >
                       <div className="text-[10px] uppercase tracking-[0.18em] text-white/62">Main Workspace</div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <MapLabelChip label="Preview" />
+                        <MapLabelChip label="Open" />
+                        {activeTeamRootId === generalManager.id ? <MapLabelChip label="Active" tone="active" /> : null}
+                      </div>
                       <div className="mt-1 text-[19px] font-semibold">{generalManager.label}</div>
                     </div>
 
@@ -1953,7 +1982,11 @@ function TreeOverviewView({
                       '0 10px 22px rgba(15,23,42,0.14), inset 0 1px 0 rgba(255,255,255,0.08)',
                   }}
                 >
-                  <div className="text-[8px] uppercase tracking-[0.18em] text-white/55">Main</div>
+                  <div className="flex flex-wrap items-center justify-center gap-1">
+                    <MiniLabelChip label="Preview" />
+                    <MiniLabelChip label="Main" />
+                    {activeTeamRootId === generalManager.id ? <MiniLabelChip label="Active" tone="active" /> : null}
+                  </div>
                   <div className="mt-1 line-clamp-2 text-[11px] font-semibold leading-[1.2]">{generalManager.label}</div>
                   <TreeAddUserTeamAnchor onClick={onConnectTeam} connection={externalConnection} />
                 </div>
@@ -1981,6 +2014,7 @@ function TreeOverviewView({
             const boxColor = isManagerFamilyNode ? theme.ribbon : theme.accent;
             const boxBorder = isManagerFamilyNode ? theme.border : getFamilyColor(theme.accent, 0.28);
             const teamType = node.teamType;
+            const statusLabel = node.phaseState ?? 'Ready';
 
             return (
               <div
@@ -1998,27 +2032,13 @@ function TreeOverviewView({
                     : `0 8px 18px rgba(15,23,42,0.07), inset 0 3px 0 ${theme.accent}, inset 0 1px 0 rgba(255,255,255,0.75)`,
                 }}
               >
-                {node.id === activeTeamRootId ? (
-                  <div
-                    className="absolute left-2 top-2 rounded-full bg-emerald-100 px-2 py-1 text-[9px] font-semibold text-emerald-800"
-                    style={{ border: '1px solid rgba(16, 185, 129, 0.25)' }}
-                  >
-                    Active
-                  </div>
-                ) : null}
-                {teamType ? (
-                  <div
-                    className="absolute right-1.5 top-1.5 rounded-[7px] border px-1.5 py-0.5 text-[8px] font-semibold leading-none text-neutral-700"
-                    style={{
-                      borderColor: 'rgba(15, 23, 42, 0.16)',
-                      background: 'rgba(255,255,255,0.96)',
-                      boxShadow: '0 2px 6px rgba(15,23,42,0.08)',
-                    }}
-                  >
-                    {teamType}
-                  </div>
-                ) : null}
                 <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-2 py-2">
+                  <div className="flex max-w-full flex-wrap items-center justify-center gap-1">
+                    <MiniLabelChip label="Preview" />
+                    {teamType ? <MiniLabelChip label={teamType} /> : null}
+                    {node.id === activeTeamRootId ? <MiniLabelChip label="Active" tone="active" /> : null}
+                    <MiniLabelChip label={statusLabel} />
+                  </div>
                   <div
                     className="rounded-full px-2 py-1 text-[8px] uppercase tracking-[0.14em]"
                     style={{
@@ -2028,9 +2048,6 @@ function TreeOverviewView({
                     }}
                   >
                     {roleLabel}
-                  </div>
-                  <div className="rounded-full border border-neutral-200 bg-white/80 px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-[0.14em] text-neutral-600">
-                    Preview
                   </div>
                   <div className="line-clamp-3 text-[11px] font-semibold leading-[1.2] text-neutral-900">
                     {node.label}
